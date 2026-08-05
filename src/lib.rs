@@ -34,6 +34,10 @@ pub mod receipt;
 
 pub use receipt::{sign_receipt, ReceiptParams};
 
+/// Re-exported so callers do not have to depend on `thegraph-core` just to name an address, and so
+/// they cannot accidentally pull a different alloy version than the one receipts are signed with.
+pub use thegraph_core::alloy::primitives::Address;
+
 /// EIP-712 domain for Horizon (TAP v2) receipts.
 ///
 /// Mirrors `tap_core::tap_eip712_domain(chain_id, verifier, TapVersion::V2)`, reproduced here so a

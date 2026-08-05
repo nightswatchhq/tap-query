@@ -100,6 +100,12 @@ async fn main() -> anyhow::Result<()> {
             println!("=> ADDRESS MISMATCH. It recovered someone else, so the domain or encoding is");
             println!("   wrong. Check TAP_VERIFIER - funding will not fix this.");
         }
+    } else if body.contains("denylist") {
+        // Distinct from unfunded: the indexer's tap-agent tracks escrow via the escrow subgraph and
+        // denylists senders it believes are empty. After a fresh deposit there is a propagation
+        // delay before it removes you, so this is usually "wait", not "wrong".
+        println!("=> DENYLISTED. Their tap-agent has not seen the escrow deposit yet, or has");
+        println!("   denylisted this sender. Usually transient after funding - retry later.");
     } else if body.contains("no tap receipt") || body.contains("not found") {
         println!("=> RECEIPT NOT SEEN. Header name or encoding is wrong; funding would not help.");
     } else if body.contains("signature") || body.contains("recover") || body.contains("invalid") {
