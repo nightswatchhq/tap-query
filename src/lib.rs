@@ -37,6 +37,9 @@ pub use receipt::{sign_receipt, ReceiptParams};
 /// Re-exported so callers do not have to depend on `thegraph-core` just to name an address, and so
 /// they cannot accidentally pull a different alloy version than the one receipts are signed with.
 pub use thegraph_core::alloy::primitives::Address;
+/// Re-exported for the same reason as `Address`: callers must sign with the same alloy version the
+/// receipts are built with, and pulling their own risks a silent second copy in the tree.
+pub use thegraph_core::alloy::signers::local::PrivateKeySigner;
 
 /// EIP-712 domain for Horizon (TAP v2) receipts.
 ///
