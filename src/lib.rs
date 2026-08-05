@@ -26,7 +26,6 @@ use anyhow::{Context, Result};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use thegraph_core::alloy::{
     primitives::{FixedBytes, U256},
-    signers::local::PrivateKeySigner,
     sol_types::Eip712Domain,
 };
 
