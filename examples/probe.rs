@@ -58,7 +58,9 @@ async fn main() -> anyhow::Result<()> {
         payer,
     };
 
-    println!("signing as   {}", signer.address());
+    // Captured before the signer moves into the client, since the verdict below needs it.
+    let signer_address = signer.address();
+    println!("signing as   {signer_address}");
     println!("payer        {payer}");
     println!("verifier     {verifier}");
     println!("data_service {data_service}");
@@ -90,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
         // The refusal usually quotes the address it recovered. If that is NOT our signer, the
         // problem is the domain or encoding, not the funding - and an earlier version of this
         // example happily reported success in exactly that case.
-        let ours = format!("{:?}", signer.address()).to_lowercase();
+        let ours = format!("{signer_address:?}").to_lowercase();
         if body.contains(&ours[2..]) {
             println!("=> WIRE FORMAT VERIFIED. It decoded our receipt and recovered OUR address,");
             println!("   refusing only for escrow. Authorise this signer and fund it.");
