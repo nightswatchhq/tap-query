@@ -1,0 +1,28 @@
+[package]
+name = "tap-query"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Pay The Graph's indexers directly with TAP receipts and query them, without a gateway."
+repository = "https://github.com/nightswatchhq/tap-query"
+
+# Versions are pinned to what `indexer-rs` resolves against, deliberately. An earlier attempt let
+# cargo pick `tap_eip712_message 0.1`, which pulls alloy 0.9 while `thegraph-core 0.15` pulls
+# alloy 1.8 — both link `ckzg`, so the build fails outright. Matching the versions the indexer
+# itself uses also means we sign with exactly the types it verifies with.
+[dependencies]
+tap_graph = { version = "0.3.5", features = ["v2"] }
+thegraph-core = { version = "0.15.2", features = [
+    "alloy-eip712",
+    "alloy-sol-types",
+    "alloy-signers",
+    "alloy-signer-local",
+] }
+prost = "0.14.1"
+base64 = "0.22"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1"
