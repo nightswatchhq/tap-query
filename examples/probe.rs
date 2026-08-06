@@ -68,15 +68,20 @@ async fn main() -> anyhow::Result<()> {
     println!("allocation   {allocation}");
     println!();
 
-    let client = PaidQueryClient::new(signer, ctx, Duration::from_secs(30))?;
+    // Overridable so a caller can reproduce a production value exactly. The default is deliberately
+    // a real amount: probing with a zero-value receipt tests nothing except the rejection path.
+    let receipt_value: u128 = std::env::var("TAP_RECEIPT_VALUE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(1_000_000_000_000u128);
+    let client = PaidQueryClient::new(signer, ctx, Duration::from_secs(30), receipt_value)?;
     let resp = client
         .query(
             url,
             indexer.parse()?,
             allocation.parse()?,
             deployment,
-            r#"{"query":"{ _meta { block { number } } }"}"#,
-            1_000_000_000_000u128,
+            &std::env::var("TAP_QUERY").unwrap_or_else(|_| r#"{"query":"{ _meta { block { number } } }"}"#.to_string()),
         )
         .await?;
 

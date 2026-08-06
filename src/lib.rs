@@ -89,15 +89,41 @@ pub struct PaidQueryClient {
     http: reqwest::Client,
     signer: PrivateKeySigner,
     ctx: PaymentContext,
+    /// Value written into every receipt, in the escrow token's smallest unit.
+    ///
+    /// Held on the client rather than passed per query, because it was passed per query and a
+    /// caller passed `0` under a comment claiming the client supplied it. Every receipt was
+    /// therefore worth nothing and every indexer with a cost model refused it with
+    /// `"Query receipt does not have the minimum value. Expected value: 1. Received value: 0."` —
+    /// a 400 that looks like the indexer misbehaving. Configure it once, here, where it cannot be
+    /// got wrong at a call site.
+    receipt_value: u128,
 }
 
 impl PaidQueryClient {
-    pub fn new(signer: PrivateKeySigner, ctx: PaymentContext, timeout: std::time::Duration) -> Result<Self> {
+    pub fn new(
+        signer: PrivateKeySigner,
+        ctx: PaymentContext,
+        timeout: std::time::Duration,
+        receipt_value: u128,
+    ) -> Result<Self> {
+        if receipt_value == 0 {
+            anyhow::bail!(
+                "receipt_value is 0 — every indexer with a cost model will refuse this as \
+                 'does not have the minimum value', which reads like an indexer fault and is not"
+            );
+        }
         Ok(Self {
             http: reqwest::Client::builder().timeout(timeout).build()?,
             signer,
             ctx,
+            receipt_value,
         })
+    }
+
+    /// The value each receipt carries.
+    pub fn receipt_value(&self) -> u128 {
+        self.receipt_value
     }
 
     /// The address receipts will be signed by, which is the escrow account that must hold a balance.
@@ -108,9 +134,9 @@ impl PaidQueryClient {
     /// Query one indexer for one deployment, paying for it.
     ///
     /// `indexer_url` is the indexer's service endpoint; the deployment path is appended, matching
-    /// what the gateway does. `value` is in the escrow token's smallest unit and must clear the
-    /// indexer's cost model — `MinimumValue` rejects an underpriced receipt, so paying too little
-    /// looks like a refusal to serve rather than a pricing error.
+    /// what the gateway does. The receipt value comes from the client (see `receipt_value`) and
+    /// must clear the indexer's cost model — `MinimumValue` rejects an underpriced receipt with a
+    /// 400 that looks like a refusal to serve rather than the pricing error it is.
     pub async fn query(
         &self,
         indexer_url: &str,
@@ -118,14 +144,13 @@ impl PaidQueryClient {
         allocation: Address,
         deployment_ipfs_hash: &str,
         query: &str,
-        value: u128,
     ) -> Result<PaidResponse> {
         let params = ReceiptParams {
             collection_id: collection_id_from_allocation(allocation),
             payer: self.ctx.payer,
             data_service: self.ctx.data_service,
             service_provider: indexer_address,
-            value,
+            value: self.receipt_value,
         };
         let header = sign_receipt(&self.signer, &self.ctx.domain(), params)
             .context("failed to sign TAP receipt")?;
